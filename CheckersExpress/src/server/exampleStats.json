@@ -1,0 +1,22 @@
+[
+    {
+        "username": "john",
+        "wins": 2,
+        "losses": 1
+    },
+    {
+        "username": "emma",
+        "wins": 100,
+        "losses": 0
+    },
+    {
+        "username": "james",
+        "wins": 1,
+        "losses": 4
+    },
+    {
+        "username": "johannes",
+        "wins": 8,
+        "losses": 17
+    }
+]

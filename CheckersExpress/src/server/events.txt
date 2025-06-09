@@ -1,0 +1,12 @@
+format:
+eventName, message, message... - description
+
+Client to server:
+joinGame, gameCode - Request to join the game with the given gameCode
+count, gameCode, count - Update the count of the given game code (currently has no authentication lol)
+
+Server to client:
+gameJoined, gameCode - Tells client they have joined the given game. Does not mean game has begun.
+gameFull - Tells client that the game they attempted to join is full
+gameStarted - Tells the client that their game has started
+count, count - Tells the client the updated count of their game. Server broadcasts this to the gameCode room on every update.

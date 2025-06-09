@@ -1,0 +1,34 @@
+#game {
+    border: 5px solid rgb(30, 30, 30);
+    min-width: 20rem;
+    max-width: 36rem;
+    aspect-ratio: 1/1;
+    margin: 0 auto;
+}
+
+.rotate {
+    transform: rotate(180deg);
+}
+
+.row {
+    display: flex;
+    height: calc(100% / 8);
+    width: 100%;
+
+}
+
+.square {
+    border-radius: 0;
+    padding: 0;
+    width: calc(100% / 8);
+    aspect-ratio: 1/1;
+    border:none;
+}
+
+
+
+img.square {
+    position: relative;
+    width: 90%;
+    aspect-ratio: 1/1;
+}
