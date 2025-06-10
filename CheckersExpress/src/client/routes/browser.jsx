@@ -47,7 +47,7 @@ export default function Browser() {
     }
 
     useEffect(() => {
-        if(!username) return navigate('/');
+        if (!username) return navigate('/');
     }, []);
 
     useEffect(() => {
@@ -77,24 +77,37 @@ export default function Browser() {
             setGameOverReason(reason);
         });
 
-        socket.on("board", (boardState, currentPlayer, onlyMove) => {
-            board.boardState = boardState.map((token) => {
-                if (token) {
-                    return new Token(token.index, token.isMonarch, token.color);
-                }
-                return null;
-            })
-            board.currentPlayer = currentPlayer;
-            board.onlyMove = onlyMove;
-            console.log("got board update with player ", currentPlayer, "board player ", board.currentPlayer);
-            if (onlyMove && board.currentPlayer === player) {
-                const pos = indexToPosition(onlyMove.index);
+        socket.on("board", (boardState, currentPlayer, onlyMoveData) => {
+            // 1. Rebuild board state with new tokens
+            const newBoardState = boardState.map(token =>
+                token ? new Token(token.index, token.isMonarch, token.color) : null
+            );
+
+            // 2. Recreate onlyMove reference if exists
+            const newOnlyMove = onlyMoveData ?
+                newBoardState[onlyMoveData.index] :
+                null;
+
+            // 3. Update board immutably
+            const newBoard = board.copy();
+            newBoard.boardState = newBoardState;
+            newBoard.currentPlayer = currentPlayer;
+            newBoard.onlyMove = newOnlyMove; // Use the new reference
+
+            console.log("Board update received", {
+                player: currentPlayer,
+                onlyMove: newOnlyMove?.index,
+                monarchs: newBoardState.filter(t => t?.isMonarch).length
+            });
+
+            // 4. Auto-select if onlyMove applies to current player
+            if (newOnlyMove && currentPlayer === player) {
+                const pos = indexToPosition(newOnlyMove.index);
                 setSelected({ row: pos[0], col: pos[1] });
             }
-            console.log("Updated board state", boardState);
-            console.log("board copy", board.copy());
-            setBoard(board.copy());
-        })
+
+            setBoard(newBoard);
+        });
 
         return () => {
             socket.off("gameJoined");

@@ -16,69 +16,60 @@ const endOfBoard = function (token, newPosition) {
 }
 
 // makeMove() function
-export const makeMove = function (board, token, newPosition) {
-    let legalMove = false;
-
-    // If you move the only token you're allowed to move, you're back to being able to move anything
-    if (board.onlyMove == token) board.onlyMove = null;
-
+export const makeMove = function(board, token, newPosition) {
+    // Validate move first
     const moveOptions = availableMoves(board, token);
-    // Check if current row/col exists within the valid move list for the selected token
-    for (const validMove of moveOptions) {
-        if (newPosition[0] == validMove[0] && newPosition[1] == validMove[1]) {
-            legalMove = true;
-        }
-    }
+    const isValid = moveOptions.some(m => 
+        m[0] === newPosition[0] && m[1] === newPosition[1]
+    );
 
-    if (!legalMove) {
-        console.log("Attempted to make move but it was not legal!");
+    if (!isValid) {
+        console.log("Illegal move attempted");
         return board;
     }
 
-    const tokenPosition = indexToPosition(token.index);
-    console.log("Moving token from ", tokenPosition, "to", newPosition);
-    const dy = (newPosition[0] - tokenPosition[0]);
-    const dx = (newPosition[1] - tokenPosition[1]);
+    // Clear onlyMove if we're moving the restricted piece
+    if (board.onlyMove === token) board.onlyMove = null;
 
-    // Piece capture logic
-    if (Math.abs(dy) == 2 && Math.abs(dx) == 2) {
-        // If the piece wants to move by 2, it means a piece will be captured.
-        console.log("Piece captured at", tokenPosition[0] + dy / 2, tokenPosition[1] + dx / 2,)
-        board.boardState[positionToIndex(tokenPosition[0] + dy / 2, tokenPosition[1] + dx / 2)] = null;
+    const [oldY, oldX] = indexToPosition(token.index);
+    const [newY, newX] = newPosition;
+    const dy = newY - oldY;
+    const dx = newX - oldX;
+
+    // Handle capture
+    if (Math.abs(dy) === 2) {
+        const capY = oldY + dy/2;
+        const capX = oldX + dx/2;
+        board.boardState[positionToIndex(capY, capX)] = null;
     }
 
-    if (endOfBoard(token, newPosition)) {
-        token.isMonarch = true;
-    }
-
-    const newIndex = positionToIndex(newPosition[0], newPosition[1]);
+    // Move token
+    const newIndex = positionToIndex(newY, newX);
     board.boardState[token.index] = null;
     token.index = newIndex;
     board.boardState[newIndex] = token;
 
-    if (Math.abs(dy) == 2 && Math.abs(dx) == 2) {
-        const moveOptions = availableMoves(board, token);
-        console.log("moveOPtions ", moveOptions);
-        // Check if current row/col exists within the valid move list for the selected token
-        for (const validMove of moveOptions) {
-            let newPosition = [validMove[0], validMove[1]]
-            const tokenPosition = indexToPosition(token.index);
-            console.log("Testing move from ", tokenPosition, "to", newPosition);
-            const dy = (newPosition[0] - tokenPosition[0]);
-            const dx = (newPosition[1] - tokenPosition[1]);
-            // Don't swap turns if there's a next move that 
-            if (Math.abs(dy) == 2 && Math.abs(dx) == 2) {
-                board.onlyMove = token;
-                return board;
-            }
+    // Check promotion (CRITICAL CHANGE - moved before capture check)
+    const promoted = endOfBoard(token, newPosition);
+    if (promoted) {
+        token.isMonarch = true;
+        board.onlyMove = null; // Clear restriction immediately
+    }
+
+    // Check for consecutive captures
+    if (Math.abs(dy) === 2) {
+        const nextCaptures = availableMoves(board, token)
+            .filter(([y, x]) => Math.abs(y - newY) === 2);
+        
+        if (nextCaptures.length > 0 && !promoted) { // Only restrict if not promoted
+            board.onlyMove = token;
+            return board;
         }
     }
 
-
-
     board.iterateTurn();
     return board;
-}
+};
 
 
 // availableMoves() function (for a single piece)

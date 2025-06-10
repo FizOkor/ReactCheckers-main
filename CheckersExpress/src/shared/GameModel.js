@@ -2,40 +2,43 @@
 
 import { allPlayerMoves } from "./GameController.js";
 
+let TOKEN_ID_COUNTER = 0;
+
 // Tokens store their own position, title, and color
 export class Token {
     index;
     isMonarch;
     color;
+    id;
 
     constructor(index, isMonarch, color) {
         this.index = index;
         this.isMonarch = isMonarch;
         this.color = color;
+        this.id = TOKEN_ID_COUNTER++; // Unique ID
     }
 
     copy = function () {
-        return new Token(this.index, this.isMonarch, this.color);
+        const newToken = new Token(this.index, this.isMonarch, this.color);
+        newToken.id = this.id; // preserve ID when copying
+        return newToken;
     }
+
     softCopy = function (newIndex) {
-        return new Token(newIndex, this.isMonarch, this.color);
+        const newToken = new Token(newIndex, this.isMonarch, this.color);
+        newToken.id = this.id;
+        return newToken;
     }
+
     imgSource = function () {
         if (this.color == "b") {
-            if (this.isMonarch) {
-                return "dark_monarch.png";
-            } else {
-                return "dark_piece.png";
-            }
+            return this.isMonarch ? "dark_monarch.png" : "dark_piece.png";
         } else {
-            if (this.isMonarch) {
-                return "light_monarch.png";
-            } else {
-                return "light_piece.png";
-            }
+            return this.isMonarch ? "light_monarch.png" : "light_piece.png";
         }
     }
 }
+
 const redToken = new Token(0, false, "r")
 const blackToken = new Token(0, false, "b")
 
