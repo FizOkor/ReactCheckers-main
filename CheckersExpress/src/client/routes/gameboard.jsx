@@ -6,43 +6,90 @@ import { Token } from "../../shared/GameModel";
 
 export default function GameBoard({ board, socket, player, setBoard, selected, setSelected }) {
     // selected = {row: #, col: #}
+    const [playerTurn, setPlayerTurn] = useState('')
 
     useEffect(() => {
         board.selected = selected;
     }, [selected])
 
     useEffect(() => {
-        const winner = board.winner === "r" ? "Red" : "Black";
-        // alert("Game Over, " + winner + " Wins!")
-    }, [board.winner])
+        if (!board.winner) return;
+
+        let message;
+        if (board.winner === "draw") {
+            message = "Game Over, it's a draw!";
+        } else {
+            const winner = board.winner === "r" ? "Red" : "Black";
+            message = `Game Over, ${winner} wins!`;
+        }
+
+        // alert(message);
+    }, [board.winner]);
+
+
+    useEffect(() => {
+        setPlayerTurn(board.currentPlayer);
+        // console.log('currentPlayer:',board.currentPlayer, 'player', player);
+    }, [board.currentPlayer]);
 
     const clickSquare = function (row, col) {
-        console.log("Square Clicked:", row, col, "Index of Square:", positionToIndex(row, col), " current player ", board.currentPlayer, " i am player ", player);
-        if (board.currentPlayer !== player) {
+        const index = positionToIndex(row, col);
+        const clickedToken = tokenAt(board, row, col);
+        const isPlayerTurn = board.currentPlayer === player;
+        const isOwnToken = clickedToken?.color === player;
+
+        if(clickedToken) console.log('clickedToken:', clickedToken);
+        // console.log(board);
+
+        // 1. Block if it's not this player's turn
+        if (!isPlayerTurn) {
             setSelected({});
             return;
         }
-        if (tokenAt(board, row, col)?.color === (board.currentPlayer) && board.currentPlayer == player) {
-            console.log("only move ", indexToPosition(board.onlyMove?.index), " row col ", [row, col], " bool  ", indexToPosition(board.onlyMove?.index)[0] === row && indexToPosition(board.onlyMove?.index)[1] === col);
 
-            // Check if there is a restriction on movement and, if there is, that the user has clicked on that tile
-            if (board.onlyMove && !(indexToPosition(board.onlyMove?.index)[0] === row && indexToPosition(board.onlyMove?.index)[1] === col)) {
-                console.log("Was not only move. Only move: ", board.onlyMove);
+        // 2. Handle token selection
+        if (isOwnToken) {
+            // If there's a restricted move (onlyMove), enforce it
+            if (board.onlyMove && board.onlyMove !== clickedToken) {
+                console.log("Restricted to token ID:", board.onlyMove);
+                console.log('clickedToken:', clickedToken);
                 return;
             }
+
+            // Valid token selected
             setSelected({ row, col });
             return;
         }
 
-        // If the clicked square is a legal move, make the move
-        if (isLegalMove(board, selected, [row, col])) {
-            board = makeMove(board, tokenAt(board, selected.row, selected.col), [row, col]);
-            socket.emit("makemove", { oldRow: selected.row, oldCol: selected.col, newRow: row, newCol: col });
-            setSelected({})
-            return;
+        // 3. Handle move attempt
+        if (selected?.row != null && selected?.col != null) {
+            const fromToken = tokenAt(board, selected.row, selected.col);
+
+            // Verify it's your token and the move is legal
+            if (fromToken?.color === player && isLegalMove(board, selected, [row, col])) {
+                board = makeMove(board, fromToken, [row, col]);
+                socket.emit("makemove", {
+                    oldRow: selected.row,
+                    oldCol: selected.col,
+                    newRow: row,
+                    newCol: col,
+                });
+                // console.table(board.boardState.map(t => t ? `${t.color[0]}${t.index}` : null));
+                // console.log({
+                //     oldRow: selected.row,
+                //     oldCol: selected.col,
+                //     newRow: row,
+                //     newCol: col,
+                // });
+                setSelected({});
+                return;
+            }
         }
 
-    }
+        // 4. Invalid click or empty space
+        setSelected({});
+    };
+
 
     const squareColor = function (row, col) {
         // dark purple #460075
@@ -65,8 +112,6 @@ export default function GameBoard({ board, socket, player, setBoard, selected, s
     }
 
     let rotateClass = (player !== "b") ? "rotate" : null;
-    // let oppositeRotate = (player === "b") ? "rotate" : null;
-    // console.log("rotate class", rotateClass);
 
     // draw tokens
     return (
@@ -93,6 +138,7 @@ export default function GameBoard({ board, socket, player, setBoard, selected, s
                     })
                 }
             </div>
+            <p>{player === "s" ? "Spectator" : player === playerTurn ? "Your Turn" : "Waiting for opponent..."}</p>
             <p>You are {player === "s" ? "Spectator" : player === "r" ? "Red" : "Black"}</p>
         </>
     )

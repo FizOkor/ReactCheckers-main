@@ -12,127 +12,186 @@ const endOfBoard = function (token, newPosition) {
 };
 
 // makeMove() function
-export const makeMove = function(board, token, newPosition) {
-    // Validate move first
-    const moveOptions = availableMoves(board, token);
-    const isValid = moveOptions.some(m => 
-        m[0] === newPosition[0] && m[1] === newPosition[1]
-    );
-
-    if (!isValid) {
-        console.log("Illegal move attempted");
-        return board;
-    }
-
-    // Clear onlyMove if we're moving the restricted piece
-    if (board.onlyMove === token.id) board.onlyMove = null;
-
-    const [oldY, oldX] = indexToPosition(token.index);
-    const [newY, newX] = newPosition;
-    const dy = newY - oldY;
-    const dx = newX - oldX;
-
-    // Handle capture
-    if (Math.abs(dy) === 2) {
-        const capY = oldY + dy/2;
-        const capX = oldX + dx/2;
-        board.boardState[positionToIndex(capY, capX)] = null;
-    }
-
-    // Move token
-    const newIndex = positionToIndex(newY, newX);
-    board.boardState[token.index] = null;
-    token.index = newIndex;
-    board.boardState[newIndex] = token;
-
-    // Check promotion (CRITICAL CHANGE - moved before capture check)
-    const promoted = endOfBoard(token, newPosition);
-    if (promoted) {
-        token.isMonarch = true;
-        board.onlyMove = null; // Clear restriction immediately
-    }
-
-    // Check for consecutive captures
-    if (Math.abs(dy) === 2) {
-        const nextCaptures = availableMoves(board, token)
-            .filter(([y, x]) => Math.abs(y - newY) === 2);
-        
-        if (nextCaptures.length > 0 && !promoted) { // Only restrict if not promoted
-            board.onlyMove = token.id;
-            return board;
-        }
-    }
-
-    board.iterateTurn();
+export const makeMove = function (board, token, newPosition) {
+  // Validate move
+  const moveOptions = availableMoves(board, token);
+  const isValid = moveOptions.some(
+    (m) => m[0] === newPosition[0] && m[1] === newPosition[1]
+  );
+  if (!isValid) {
+    console.log("Illegal move attempted");
     return board;
-};
+  }
 
+  // Clear onlyMove if relevant
+  if (board.onlyMove === token.id) board.onlyMove = null;
 
-// availableMoves() function (for a single piece)
-export const availableMoves = function (board, token) {
-  const moves = [];
+  const [oldY, oldX] = indexToPosition(token.index);
+  const [newY, newX] = newPosition;
+  const dy = newY - oldY;
+  const dx = newX - oldX;
+  const absDy = Math.abs(dy);
+  const absDx = Math.abs(dx);
 
-  if (board.onlyMove && board.onlyMove !== token.id) return [];
+  let captured = false;
 
-  const position = indexToPosition(token.index);
-  // console.log("Index:", token.index, "Position:", position)
-  const x = position[1];
-  const y = position[0];
+  // --- Handle captures ---
+  if (absDy > 1 || absDx > 1) {
+    const stepY = Math.sign(dy);
+    const stepX = Math.sign(dx);
 
-  const xOptions = [-1, 1];
-  const yOptions = [];
-  // Populate list of moves based on color + royalty status
-  if (token.isMonarch) {
-    for (const dy of [-1, 1]) {
-      for (const dx of [-1, 1]) {
-        let n = 1;
-        while (inBounds(y + dy * n, x + dx * n)) {
-          const target = tokenAt(board, y + dy * n, x + dx * n);
-          if (!target) {
-            moves.push([y + dy * n, x + dx * n]);
-            n++;
+    if (token.isMonarch) {
+      let currentY = oldY + stepY;
+      let currentX = oldX + stepX;
+      let hasCaptured = false;
+
+      while (currentY !== newY || currentX !== newX) {
+        const target = tokenAt(board, currentY, currentX);
+
+        if (target) {
+          if (target.color !== token.color && !hasCaptured) {
+            board.boardState[positionToIndex(currentY, currentX)] = null;
+            hasCaptured = true;
+            captured = true;
           } else {
-            // Handle potential capture
-            if (target.color !== token.color) {
-              const jumpY = y + dy * (n + 1),
-                jumpX = x + dx * (n + 1);
-              if (inBounds(jumpY, jumpX) && !tokenAt(board, jumpY, jumpX)) {
-                moves.push([jumpY, jumpX]);
-              }
-            }
+            // Cannot jump over multiple or own pieces
             break;
           }
         }
+
+        currentY += stepY;
+        currentX += stepX;
+      }
+    } else {
+      // Regular piece capture
+      const capY = oldY + dy / 2;
+      const capX = oldX + dx / 2;
+      const capturedToken = tokenAt(board, capY, capX);
+      if (capturedToken && capturedToken.color !== token.color) {
+        board.boardState[positionToIndex(capY, capX)] = null;
+        captured = true;
       }
     }
-  } else if (token.color == "b") {
-    yOptions.push(-1);
-  } else {
-    yOptions.push(1);
   }
-  // console.log("Available moves from", y, x, ":", String(xOptions), String(yOptions))
-  // Loop through x and y movement options
-  xOptions.forEach((dx) => {
-    yOptions.forEach((dy) => {
-      const target = tokenAt(board, y + dy, x + dx);
 
-      if (inBounds(y + dy, x + dx) && tokenAt(board, y + dy, x + dx) == null) {
-        // Only allow moves that don't capture if the piece is not restricted
-        // This cannot go in the parent if because the else if should not trigger
-        if (!board.onlyMove) {
-          moves.push([y + dy, x + dx]);
+  // --- Move token ---
+  const newIndex = positionToIndex(newY, newX);
+  board.boardState[token.index] = null;
+  token.index = newIndex;
+  board.boardState[newIndex] = token;
+
+  // --- Handle promotion ---
+  const promoted = endOfBoard(token, newPosition);
+  if (promoted) {
+    token.isMonarch = true;
+    board.onlyMove = null; // clear restriction
+  }
+
+  // --- Check for follow-up captures (for regular pieces or monarchs) ---
+  // if (captured && !promoted) {
+  //   const nextCaptureMoves = availableMoves(board, token).filter(([y, x]) => {
+  //     const dy2 = y - newY;
+  //     const dx2 = x - newX;
+  //     return Math.abs(dy2) > 1 || Math.abs(dx2) > 1;
+  //   });
+
+  //   if (nextCaptureMoves.length > 0) {
+  //     console.log('nextCaptureMoves:', nextCaptureMoves)
+  //     board.onlyMove = token;
+  //     board.boardState = board.copy().boardState;
+  //     return board;
+  //   }
+  // }
+
+  board.iterateTurn();
+  return board;
+};
+
+// availableMoves() function (for a single piece)
+export const availableMoves = function (board, token) {
+  const captures = [];
+  const moves = [];
+
+  if (board.onlyMove && board.onlyMove !== token) return [];
+
+  const [y, x] = indexToPosition(token.index);
+  const directions = [
+    [-1, -1],
+    [-1, 1],
+    [1, -1],
+    [1, 1],
+  ];
+
+  if (token.isMonarch) {
+    for (const [dy, dx] of directions) {
+      let n = 1;
+      let captured = false;
+
+      while (inBounds(y + dy * n, x + dx * n)) {
+        const ny = y + dy * n;
+        const nx = x + dx * n;
+        const occupant = tokenAt(board, ny, nx);
+
+        if (occupant) {
+          if (occupant.color === token.color) {
+            break; //  Own piece blocks further movement in this direction
+          }
+
+          if (captured) {
+            break; //  Already jumped a piece, can't jump another
+          }
+
+          // Found first enemy, check if we can jump over
+          const jumpY = ny + dy;
+          const jumpX = nx + dx;
+
+          if (inBounds(jumpY, jumpX) && !tokenAt(board, jumpY, jumpX)) {
+            captured = true;
+            n++; // Skip over the opponent
+            continue;
+          } else {
+            break;
+          }
+        } else {
+          if (!captured && !board.onlyMove) {
+            moves.push([ny, nx]);
+          } else if (captured) {
+            captures.push([ny, nx]);
+          }
         }
-      } else if (
-        inBounds(y + 2 * dy, x + 2 * dx) &&
-        target?.color != board.currentPlayer &&
-        tokenAt(board, y + 2 * dy, x + 2 * dx) == null
-      ) {
-        moves.push([y + 2 * dy, x + 2 * dx]);
+
+        n++;
       }
-    });
-  });
-  // console.log("Move options from selected piece:", moves)
-  return moves;
+    }
+  } else {
+    const yDir = token.color === "b" ? -1 : 1;
+
+    for (const dx of [-1, 1]) {
+      const ny = y + yDir;
+      const nx = x + dx;
+
+      // Normal move
+      if (inBounds(ny, nx) && !tokenAt(board, ny, nx) && !board.onlyMove) {
+        moves.push([ny, nx]);
+      }
+
+      // Capture move
+      const capY = y + 2 * yDir;
+      const capX = x + 2 * dx;
+      const middle = tokenAt(board, y + yDir, x + dx);
+
+      if (
+        inBounds(capY, capX) &&
+        middle &&
+        middle.color !== token.color &&
+        !tokenAt(board, capY, capX)
+      ) {
+        captures.push([capY, capX]);
+      }
+    }
+  }
+
+  return captures.length > 0 ? captures : moves;
 };
 
 export const isLegalMove = function (board, selected, newPosition) {
@@ -187,6 +246,12 @@ export const allPlayerMoves = function (board) {
 export const tokenAt = function (board, row, col) {
   const index = positionToIndex(row, col);
   return board.boardState[index];
+};
+export const tokenAtRen = function (board, row, col) {
+  return board.tokens.find((token) => {
+    const [tRow, tCol] = indexToPosition(token.index);
+    return tRow === row && tCol === col;
+  });
 };
 
 export const indexToPosition = function (index) {

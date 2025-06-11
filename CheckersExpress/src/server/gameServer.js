@@ -1,6 +1,12 @@
 // import { app, io, server } from "./main"
-import { indexToPosition, positionToIndex, isLegalMove, tokenAt, makeMove } from "../shared/GameController.js"
-import { Token, Board } from "../shared/GameModel.js"
+import {
+  indexToPosition,
+  positionToIndex,
+  isLegalMove,
+  tokenAt,
+  makeMove,
+} from "../shared/GameController.js";
+import { Token, Board } from "../shared/GameModel.js";
 
 function joinGame(gameCode, socket, username, games, io) {
   socket.username = username;
@@ -12,7 +18,12 @@ function joinGame(gameCode, socket, username, games, io) {
   }
   // if less than two players, join game
   if (games[gameCode].players.length < games[gameCode].maxPlayers) {
-    console.log("player0", games[gameCode].players[0], " joining game ", gameCode);
+    console.log(
+      "player0",
+      games[gameCode].players[0],
+      " joining game ",
+      gameCode
+    );
     if (games[gameCode].players[0] === username) {
       console.log("already in game");
       socket.emit("alreadyInGame");
@@ -30,7 +41,7 @@ function joinGame(gameCode, socket, username, games, io) {
       console.log("Starting game", gameCode);
       // Tell the other player they are red
       socket.to(gameCode).emit("gameStarted", "r");
-      socket.emit("gameStarted", "b")
+      socket.emit("gameStarted", "b");
       // io.to(gameCode).emit("board", games[gameCode].board.boardState, games[gameCode].board.currentPlayer, games[gameCode].board.onlyMove);
     }
   } else {
@@ -38,44 +49,66 @@ function joinGame(gameCode, socket, username, games, io) {
     socket.join(gameCode);
     socket.emit("gameJoined", gameCode);
     socket.emit("gameStarted", "s");
-    socket.emit("board", games[gameCode].board.boardState, games[gameCode].board.currentPlayer, games[gameCode].board.onlyMove);
-
+    socket.emit(
+      "board",
+      games[gameCode].board.boardState,
+      games[gameCode].board.currentPlayer,
+      games[gameCode].board.onlyMove
+    );
   }
 }
 
 export default function ioHandler(io) {
   const games = {}; // hold all our games
-  io.on('connection', (socket) => {
-
-    console.log('A user connected to the socket');
+  io.on("connection", (socket) => {
+    console.log("A user connected to the socket");
 
     // Game Joining
     socket.on("createGame", (username) => {
-      let gameCode = Math.round((Math.random() * 99998) + 1).toString();
-      console.log("Creating game request from id", socket.id, "and game code", gameCode, " username ", username);
+      let gameCode = Math.round(Math.random() * 99998 + 1).toString();
+      console.log(
+        "Creating game request from id",
+        socket.id,
+        "and game code",
+        gameCode,
+        " username ",
+        username
+      );
       socket.username = username;
       if (games[gameCode]) {
-        socket.emit("gameJoinError", gameCode, "You rolled the one in a million and that game already exists. Try again.");
+        socket.emit(
+          "gameJoinError",
+          gameCode,
+          "You rolled the one in a million and that game already exists. Try again."
+        );
         return;
       }
       // Create the game
-      games[gameCode] = { players: [], maxPlayers: 2, board: new Board(), sockets: [] };
+      games[gameCode] = {
+        players: [],
+        maxPlayers: 2,
+        board: new Board(),
+        sockets: [],
+      };
       joinGame(gameCode, socket, username, games, io);
     });
 
     socket.on("joinGame", (gameCode, username) => {
       console.log("got join game request", username, gameCode);
       if (gameCode == 69420 && !games[gameCode]) {
-        games[gameCode] = { players: [], maxPlayers: 2, board: new Board(69420) };
+        games[gameCode] = {
+          players: [],
+          maxPlayers: 2,
+          board: new Board(69420),
+        };
       }
       joinGame(gameCode, socket, username, games, io);
-    })
+    });
 
     // Rebrodcast count update to relevant sockets (except the one it came from)
     socket.on("count", (gameCode, count) => {
       socket.to(gameCode).emit("count", count);
     });
-
 
     socket.on("disconnect", () => {
       let gameCode = socket.gameCode;
@@ -88,7 +121,12 @@ export default function ioHandler(io) {
           delete games[gameCode];
           console.log("Player left game ", gameCode);
         } else {
-          console.log("Player id", socket.id, "attempted to leave game they were not in ", gameCode);
+          console.log(
+            "Player id",
+            socket.id,
+            "attempted to leave game they were not in ",
+            gameCode
+          );
         }
       }
     });
@@ -96,7 +134,11 @@ export default function ioHandler(io) {
     socket.on("gameboard", () => {
       // Send full game board on request
       let gameCode = socket.gameCode;
-      socket.emit("board", games[gameCode].board.boardState, games[gameCode].board.currentPlayer);
+      socket.emit(
+        "board",
+        games[gameCode].board.boardState,
+        games[gameCode].board.currentPlayer
+      );
     });
 
     socket.on("makemove", async (msg) => {
@@ -109,24 +151,41 @@ export default function ioHandler(io) {
       // When sent a move, update the board and send new board accordingly
       const token = tokenAt(games[gameCode].board, msg.oldRow, msg.oldCol);
       if (token) {
-        games[gameCode].board = makeMove(games[gameCode].board, token, [msg.newRow, msg.newCol]);
+        games[gameCode].board = makeMove(games[gameCode].board, token, [
+          msg.newRow,
+          msg.newCol,
+        ]);
       } else {
         console.log("Move selected an invalid piece");
       }
 
-      console.log("Sending board for game ", gameCode, "only move ", games[gameCode].board.onlyMove);
-      io.to(gameCode).emit("board", games[gameCode].board.boardState, games[gameCode].board.currentPlayer, games[gameCode].board.onlyMove);
-      if (games[gameCode].board.winner) {
-        let winner = socket.username;
-        let loser = games[gameCode].players.find((player) => {
-          console.log("player", player);
-          return player !== winner
-        });
-        console.log("winner", winner, "loser", loser);
-        socket.emit("gameOver", "You win!");
-        socket.to(gameCode).emit("gameOver", "You lose!");
-        
+      console.log(
+        "Sending board for game ",
+        gameCode,
+        "only move ",
+        games[gameCode].board.onlyMove
+      );
+      io.to(gameCode).emit(
+        "board",
+        games[gameCode].board.boardState,
+        games[gameCode].board.currentPlayer,
+        games[gameCode].board.onlyMove
+      );
 
+      if (games[gameCode].board.winner) {
+        const result = games[gameCode].board.winner;
+
+        if (result === "draw") {
+          io.to(gameCode).emit("gameOver", "Game Over: It's a draw!");
+        } else {
+          const winner = socket.username;
+          const loser = games[gameCode].players.find(
+            (player) => player !== winner
+          );
+
+          socket.emit("gameOver", "You win!");
+          socket.to(gameCode).emit("gameOver", "You lose!");
+        }
 
         delete games[gameCode];
       }
@@ -135,5 +194,4 @@ export default function ioHandler(io) {
       // io.to(gameCode).emit(msg)
     });
   });
-
 }

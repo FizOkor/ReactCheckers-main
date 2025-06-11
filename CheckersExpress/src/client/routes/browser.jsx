@@ -94,11 +94,11 @@ export default function Browser() {
             newBoard.currentPlayer = currentPlayer;
             newBoard.onlyMove = newOnlyMove; // Use the new reference
 
-            console.log("Board update received", {
-                player: currentPlayer,
-                onlyMove: newOnlyMove?.index,
-                monarchs: newBoardState.filter(t => t?.isMonarch).length
-            });
+            // console.log("Board update received", {
+            //     player: currentPlayer,
+            //     onlyMove: newOnlyMove?.index,
+            //     monarchs: newBoardState.filter(t => t?.isMonarch).length
+            // });
 
             // 4. Auto-select if onlyMove applies to current player
             if (newOnlyMove && currentPlayer === player) {
