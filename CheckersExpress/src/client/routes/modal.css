@@ -1,0 +1,60 @@
+/* The Modal (background) */
+.ebcf_modal {
+    /* display: none;  */
+    position: fixed; 
+    z-index: 1; 
+    padding-top: 10rem;
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease-in-out;
+}
+.ebcf_modal.show-modal {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Modal Content */
+.ebcf_modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 26rem;
+    color: #1e1e1e;
+    z-index:999;
+    display: flex;
+    flex-direction: column;
+}
+
+/* The Close Button */
+.ebcf_close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    text-align: right;
+}
+
+.ebcf_close:hover,
+.ebcf_close:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+.items-between{
+    display:flex;
+    justify-content: space-between;
+}
+
+.modal-params {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}

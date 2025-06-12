@@ -21,9 +21,9 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
     action: login,
     loader: async () => {
-      const response = await fetch("/data", {
-        method: "GET",
-      });
+      // const response = await fetch("/data", {
+      //   method: "GET",
+      // });
       // if (response.ok) {
       //   return redirect("/browser");
       // }
@@ -40,16 +40,18 @@ const router = createBrowserRouter([
       if(username === ''){
         return redirect('/')
       }
-      const response = await fetch("/data", {
-        method: "GET",
-      });
-      if (response.status !== 200) {
-        console.log("Not authenticated");
-        return redirect("/");
-      } else {
-        // Set up socket and also give the leaderboard data
-        return { io: io(), data: await response.json() };
-      }
+
+      // const response = await fetch("/data", {
+      //   method: "GET",
+      // });
+      // if (response.status !== 200) {
+      //   console.log("Not authenticated");
+      //   return redirect("/");
+      // } else {
+      //   // Set up socket and also give the leaderboard data
+      //   return { io: io(), data: await response.json() };
+      // }
+      return {io: io()};
     },
   },
 ]);

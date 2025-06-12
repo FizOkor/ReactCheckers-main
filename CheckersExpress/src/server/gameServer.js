@@ -7,9 +7,11 @@ import {
   makeMove,
 } from "../shared/GameController.js";
 import { Token, Board } from "../shared/GameModel.js";
+import { joinGameCon, createGameCon, declareDrawCon, triggerTimeoutRefundCon } from "../contract/interact.js";
 
 function joinGame(gameCode, socket, username, games, io) {
   socket.username = username;
+  console.log('Joining Game:',gameCode)
 
   if (!games[gameCode]) {
     console.log("Game does not exist", gameCode);
@@ -64,15 +66,17 @@ export default function ioHandler(io) {
     console.log("A user connected to the socket");
 
     // Game Joining
-    socket.on("createGame", (username) => {
-      let gameCode = Math.round(Math.random() * 99998 + 1).toString();
+    socket.on("createGame", (username, stakeAmt) => {
+      let gameCode = '#CHECKERS-' + Math.round(Math.random() * 99998 + 1).toString();
       console.log(
         "Creating game request from id",
         socket.id,
         "and game code",
         gameCode,
         " username ",
-        username
+        username,
+        'stakeAmt ',
+        stakeAmt
       );
       socket.username = username;
       if (games[gameCode]) {
@@ -93,7 +97,16 @@ export default function ioHandler(io) {
       joinGame(gameCode, socket, username, games, io);
     });
 
-    socket.on("joinGame", (gameCode, username) => {
+    socket.on('verifyGameCode', (gameCode) => {
+      console.log('Verifying Code:', gameCode)
+      if(games[gameCode]){
+        socket.emit('validGameCode', gameCode, true);
+      } else {
+        socket.emit('validGameCode', gameCode, false);
+      }
+    });
+
+    socket.on("joinGame", (gameCode, username, stakeAmt) => {
       console.log("got join game request", username, gameCode);
       if (gameCode == 69420 && !games[gameCode]) {
         games[gameCode] = {
@@ -103,6 +116,13 @@ export default function ioHandler(io) {
         };
       }
       joinGame(gameCode, socket, username, games, io);
+    });
+
+    socket.on('getOpp', (gameCode, player) => {
+      const players = games[gameCode].players;
+      const opp = players[0];
+      console.log('player:', player, 'opp:', opp);
+      socket.emit('opponent', opp)
     });
 
     // Rebrodcast count update to relevant sockets (except the one it came from)

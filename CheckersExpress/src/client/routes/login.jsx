@@ -28,16 +28,22 @@ export async function login({ request }) {
 }
 
 export function LoginPage() {
-    return (<>
+    return (
+    <>
+      <div className="form-div">
+        <h1>Stake Play!</h1>
         <Form method="post">
-        <h1>Web3 Checkers</h1>
+        <br />
         <input 
             type="text" 
             name="username" 
-            placeholder="Enter any username" 
+            placeholder="Enter a username" 
             required 
         />
-        <button type="submit">Play</button>
+        <button className="btn-trans" type="submit">Play</button>
         </Form>
+        <br />
+        <br />
+      </div>
     </>)
 }

@@ -24,7 +24,7 @@ app.use(express.static("src/client/assets"));
 app.use(express.urlencoded({ extended: true }));
 
 
-// Remove ALL MongoDB/bcrypt/session-related code
+// Removed ALL MongoDB/bcrypt/session-related code
 app.post("/login", (req, res) => {
   const { username } = req.body;
   console.log(username)
@@ -33,14 +33,14 @@ app.post("/login", (req, res) => {
     return res.status(400).send("Username required");
   }
 
-  // Just accept the username, no persistence
+  //  accept the username, no persistence
   res.status(200).json({ 
     success: true,
     username: username.trim()
   });
 });
 
-// middleware that always sends unauthenicated users to the login page
+// middleware to send unauthenicated users to the login page
 export const requireAuth = (req, res, next) => {
   if (req.session.login) {
     next();
