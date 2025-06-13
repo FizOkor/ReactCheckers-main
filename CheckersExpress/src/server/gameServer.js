@@ -7,7 +7,7 @@ import {
   makeMove,
 } from "../shared/GameController.js";
 import { Token, Board } from "../shared/GameModel.js";
-import { joinGameCon, createGameCon, declareDrawCon, triggerTimeoutRefundCon } from "../contract/interact.js";
+import { joinGameCon, createGameCon, declareDrawCon, triggerTimeoutRefundCon, declareWinnerCon } from "../contract/interact.js";
 
 function joinGame(gameCode, socket, username, games, io) {
   socket.username = username;
@@ -92,14 +92,12 @@ export default function ioHandler(io) {
       // Create the game
       games[gameCode] = {
         players: [],
+        playersAddr: {},
         maxPlayers: 2,
         board: new Board(),
         sockets: [],
       };
       // joinGame(gameCode, socket, username, games, io);
-    });
-    socket.on('joinGame', (gameCode) => {
-
     });
 
     socket.on('verifyGameCode', (gameCode) => {
@@ -111,14 +109,16 @@ export default function ioHandler(io) {
       }
     });
 
-    socket.on("joinGame", (gameCode, username, stakeAmt) => {
+    socket.on("joinGame", (gameCode, username, stakeAmt, addr) => {
       console.log("got join game request", username, gameCode);
       if (gameCode == 69420 && !games[gameCode]) {
         games[gameCode] = {
           players: [],
+          playersAddr: {},
           maxPlayers: 2,
           board: new Board(69420),
         };
+        games[gameCode].playersAddr[username] = addr;
       }
       joinGame(gameCode, socket, username, games, io);
     });
@@ -201,6 +201,7 @@ export default function ioHandler(io) {
         const result = games[gameCode].board.winner;
 
         if (result === "draw") {
+          declareDrawCon(gameCode);
           io.to(gameCode).emit("gameOver", "Game Over: It's a draw!");
         } else {
           const winner = socket.username;
@@ -208,6 +209,7 @@ export default function ioHandler(io) {
             (player) => player !== winner
           );
 
+          declareWinnerCon(gameCode, playersAddr[winner]);
           socket.emit("gameOver", "You win!");
           socket.to(gameCode).emit("gameOver", "You lose!");
         }

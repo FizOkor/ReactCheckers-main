@@ -70,27 +70,31 @@ export const createGameCon = async (gameId, stakeInEth) => {
   try{
     const contract = await getEscrowContract();
     const stake = ethers.parseEther(stakeInEth); // e.g. "0.01"
-    console.log(gameId,stake)
-    
+    // console.log(gameId,stake)
+
     const tx = await contract.createGame(gameId, { value: stake, gasLimit: 300000 });
     await tx.wait();
 
-    console.log("Game created:", tx.hash);
-    return {ok:true}
+    // console.log("Game created:", tx.hash);
+    return {ok: true};
   } catch (err) {
-    throw new Error(err)
+    throw new Error(err);
   }
 };
 
 export const joinGameCon = async (gameId, stakeInEth) => {
+  
   try{
     const contract = await getEscrowContract();
     const stake = ethers.parseEther(stakeInEth);
-    const tx = await contract.joinGame(gameId, { value: stake });
+
+    const tx = await contract.joinGame(gameId, { value: stake, gasLimit: 300000 });
     await tx.wait();
-    console.log("Joined game:", tx.hash);
+
+    // console.log("Joined game:", tx.hash);
+    return {ok: true};
   } catch (err) {
-    console.error(err)
+    throw new Error(err);
   }
 };
 

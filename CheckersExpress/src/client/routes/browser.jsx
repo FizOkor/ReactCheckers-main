@@ -43,6 +43,7 @@ export default function Browser() {
         if (!modalContent.stakeAmt) return alert('Enter stake!');
 
         const { gameCode, stakeAmt } = modalContent;
+        // console.log(gameCode, stakeAmt)
 
         modalContent.action(gameCode, stakeAmt);
     };
@@ -59,20 +60,24 @@ export default function Browser() {
 
 
     const handleJoinGame = () => {
-        const code = gameCode;
-        setGameCode('');
-        socket.emit('verifyGameCode', code);
+        console.log(modalContent.gameCode)
+        // setGameCode('');
+        socket.emit('verifyGameCode', modalContent.gameCode);
+    };
+
+    const handleJoinAction = (code, stake) => {
+        // console.log(code, stake);
+        gameJoin(code, stake);
     };
 
     const gameJoin = async (code, stake) => {
+        // console.log(code, stake);
         try {
-            const response = await joinGameCon(modalContent.gameCode, modalContent.stakeAmt);
+            const response = await joinGameCon(code, stake);
 
-            if (!response.ok) return alert('Error while processing')
+            if (!response) return alert('Error while processing')
 
-            console.log(response);
-
-            socket.emit("joinGame", code, username, stake);
+            socket.emit("joinGame", code, username, stake, account);
         } catch (err) {
             console.error(err)
         }
@@ -95,15 +100,15 @@ export default function Browser() {
     }
 
     const createGame = async (code, stake) => {
-        console.log(code,stake)
+        // console.log(code, stake)
         try {
             const response = await createGameCon(code, stake);
 
-            if (!response) return console.log('Error while processing')
+            if (!response) return console.error('Error while processing')
 
             socket.emit("joinGame", code, username, stake);
 
-            
+
             setModalState(false);
             clearModalContent();
 
@@ -111,7 +116,7 @@ export default function Browser() {
         } catch (err) {
             console.error(err)
         }
-        
+
     };
 
     const backToBrowser = (e) => {
@@ -164,10 +169,6 @@ export default function Browser() {
             if (!status) return alert('Invalid Game code!');
 
             socket.emit('getOpp', valCode, username);
-
-            const handleJoinAction = () => {
-                gameJoin(valCode, modalContent.stakeAmt);
-            };
 
             openModal({
                 opponent: '',
@@ -246,7 +247,7 @@ export default function Browser() {
                     </> :
                     !gameJoined ?
                         <div id='welcome'>
-                            <h1>Welcome to Stakeplay!</h1>
+                            <h1>Welcome to D_Arena</h1>
 
                             <button
                                 className='btn-trans'
@@ -271,8 +272,8 @@ export default function Browser() {
                                         type="text"
                                         className="flex-1"
                                         placeholder="Game Code"
-                                        value={gameCode}
-                                        onChange={(e) => setGameCode(e.target.value)}
+                                        value={modalContent.gameCode}
+                                        onChange={(e) => setModalContent(prev => ({ ...prev, gameCode: e.target.value }))}
                                     />
                                     <button className='btn-trans'
                                         onClick={e => handleJoinGame()}

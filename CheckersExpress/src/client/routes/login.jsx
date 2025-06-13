@@ -31,7 +31,7 @@ export function LoginPage() {
     return (
     <>
       <div className="form-div">
-        <h1>Stake Play!</h1>
+        <h1>D_Arena</h1>
         <Form method="post">
         <br />
         <input 
