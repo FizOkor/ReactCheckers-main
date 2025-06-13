@@ -64,13 +64,14 @@ export const getCurrentWallet = async () => {
 };
 
 export const createGameCon = async (gameId, stakeInEth) => {
-  console.log(gameId,stakeInEth);
-  if(!(gameId && stakeInEth)) return console.log('Pass arguments!', gameId ,stakeInEth)
+  // console.log(gameId,stakeInEth);
+  if(!(gameId && stakeInEth)) return console.warn('Pass arguments!', gameId ,stakeInEth)
 
   try{
     const contract = await getEscrowContract();
     const stake = ethers.parseEther(stakeInEth); // e.g. "0.01"
     console.log(gameId,stake)
+    
     const tx = await contract.createGame(gameId, { value: stake, gasLimit: 300000 });
     await tx.wait();
 

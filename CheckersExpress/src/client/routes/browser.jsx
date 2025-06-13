@@ -45,8 +45,6 @@ export default function Browser() {
         const { gameCode, stakeAmt } = modalContent;
 
         modalContent.action(gameCode, stakeAmt);
-        setModalState(false);
-        clearModalContent();
     };
 
     const clearModalContent = () => {
@@ -103,12 +101,17 @@ export default function Browser() {
 
             if (!response) return console.log('Error while processing')
 
-            socket.emit("joinGame", gameCode, username, stake);
+            socket.emit("joinGame", code, username, stake);
 
-            return { ok: true };
+            
+            setModalState(false);
+            clearModalContent();
+
+            // return { ok: true };
         } catch (err) {
             console.error(err)
         }
+        
     };
 
     const backToBrowser = (e) => {
