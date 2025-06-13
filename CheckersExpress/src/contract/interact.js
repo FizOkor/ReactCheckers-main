@@ -64,40 +64,66 @@ export const getCurrentWallet = async () => {
 };
 
 export const createGameCon = async (gameId, stakeInEth) => {
-  const contract = await getEscrowContract();
-  const stake = ethers.parseEther(stakeInEth); // e.g. "0.01"
-  const tx = await contract.createGame(gameId, { value: stake });
-  await tx.wait();
-  console.log("Game created:", tx.hash);
+  console.log(gameId,stakeInEth);
+  if(!(gameId && stakeInEth)) return console.log('Pass arguments!', gameId ,stakeInEth)
+
+  try{
+    const contract = await getEscrowContract();
+    const stake = ethers.parseEther(stakeInEth); // e.g. "0.01"
+    console.log(gameId,stake)
+    const tx = await contract.createGame(gameId, { value: stake, gasLimit: 300000 });
+    await tx.wait();
+
+    console.log("Game created:", tx.hash);
+    return {ok:true}
+  } catch (err) {
+    throw new Error(err)
+  }
 };
 
 export const joinGameCon = async (gameId, stakeInEth) => {
-  const contract = await getEscrowContract();
-  const stake = ethers.parseEther(stakeInEth);
-  const tx = await contract.joinGame(gameId, { value: stake });
-  await tx.wait();
-  console.log("Joined game:", tx.hash);
+  try{
+    const contract = await getEscrowContract();
+    const stake = ethers.parseEther(stakeInEth);
+    const tx = await contract.joinGame(gameId, { value: stake });
+    await tx.wait();
+    console.log("Joined game:", tx.hash);
+  } catch (err) {
+    console.error(err)
+  }
 };
 
 export const declareWinnerCon = async (gameId, winnerAddress) => {
-  const contract = await getEscrowContract();
-  const tx = await contract.declareWinner(gameId, winnerAddress);
-  await tx.wait();
-  console.log("Winner declared");
+  try{
+    const contract = await getEscrowContract();
+    const tx = await contract.declareWinner(gameId, winnerAddress);
+    await tx.wait();
+    console.log("Winner declared");
+  } catch (err) {    
+    console.error(err)
+  }
 };
 
 export const declareDrawCon = async (gameId) => {
-  const contract = await getEscrowContract();
-  const tx = await contract.declareDraw(gameId);
-  await tx.wait();
-  console.log("Draw declared");
+  try{
+    const contract = await getEscrowContract();
+    const tx = await contract.declareDraw(gameId);
+    await tx.wait();
+    console.log("Draw declared");
+  } catch (err) {
+    console.error(err)
+  }
 };
 
 export const triggerTimeoutRefundCon = async (gameId) => {
-  const contract = await getEscrowContract();
-  const tx = await contract.triggerTimeoutRefund(gameId);
-  await tx.wait();
-  console.log("Timeout refund processed");
+  try{
+    const contract = await getEscrowContract();
+    const tx = await contract.triggerTimeoutRefund(gameId);
+    await tx.wait();
+    console.log("Timeout refund processed");
+  } catch (err) {
+    console.error(err)
+  }
 };
 
 

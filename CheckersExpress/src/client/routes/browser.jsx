@@ -16,7 +16,7 @@ export default function Browser() {
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get('user') || '';
     const navigate = useNavigate();
-    
+
     const [account, setAccount] = useState(null);
 
     const [gameCode, setGameCode] = useState("");
@@ -33,32 +33,51 @@ export default function Browser() {
         opponent: '',
         gameCode: '',
         stakeAmt: '',
-        action: () => { },  // This will be the function to handle the modal action.
-        buttonText: '',  // Change button text as needed
+        action: () => { },  // function to handle the modal action.
+        buttonText: '',
     });
-    const [opponent, setOpponent] = useState('')
-    // const board = new Board();
 
 
     const handleSubmit = () => {
-        // e.preventDefault();
-        if(!account) return alert('Connect your wallet!')
-        if (modalContent.stakeAmt === '' || modalContent.stakeAmt === null) return alert('Enter stake!')
-        // console.log(modalContent.action)
-        modalContent.action();
+        if (!account) return alert('Connect your wallet!')
+        if (!modalContent.stakeAmt) return alert('Enter stake!');
+
+        const { gameCode, stakeAmt } = modalContent;
+
+        modalContent.action(gameCode, stakeAmt);
         setModalState(false);
+        clearModalContent();
     };
+
+    const clearModalContent = () => {
+        setModalContent(prev => {
+            const cleared = {};
+            for (const key in prev) {
+                cleared[key] = '';
+            }
+            return cleared;
+        });
+    };
+
 
     const handleJoinGame = () => {
         const code = gameCode;
         setGameCode('');
         socket.emit('verifyGameCode', code);
     };
-    const gameJoin = async (code, stake) => {
-        // const response = await joinGameCon(modalContent.gameCode, modalContent.stakeAmt);
 
-        // console.log(response);
-        socket.emit("joinGame", code, username, stake);
+    const gameJoin = async (code, stake) => {
+        try {
+            const response = await joinGameCon(modalContent.gameCode, modalContent.stakeAmt);
+
+            if (!response.ok) return alert('Error while processing')
+
+            console.log(response);
+
+            socket.emit("joinGame", code, username, stake);
+        } catch (err) {
+            console.error(err)
+        }
     };
 
     const openModal = ({ opponent, gameCode, action, buttonText }) => {
@@ -72,17 +91,24 @@ export default function Browser() {
         setModalState(true);
     };
 
-    const createGame = async () => {
-        console.log("Creating game");
+    const createGameEmit = (code, stake) => {
+        if (!stake) return console.error("Enter stake to proceed")
+        socket.emit("createGame", username, stake);
+    }
 
-        console.log('modalContent.gameCode', modalContent.gameCode, modalContent.stakeAmt)
-        
-        // const response = await createGameCon(modalContent.gameCode, modalContent.stakeAmt);
+    const createGame = async (code, stake) => {
+        console.log(code,stake)
+        try {
+            const response = await createGameCon(code, stake);
 
-        // console.log(response);
-        socket.emit("createGame", username, modalContent.stakeAmt)
+            if (!response) return console.log('Error while processing')
 
-        console.log('username:', username, ' modalContent.stakeAmt:', modalContent.stakeAmt)
+            socket.emit("joinGame", gameCode, username, stake);
+
+            return { ok: true };
+        } catch (err) {
+            console.error(err)
+        }
     };
 
     const backToBrowser = (e) => {
@@ -96,9 +122,18 @@ export default function Browser() {
         navigate("/browser");
     }
 
+    const loadGameCode = (code) => {
+        setGameCode(code);
+        setModalContent(prev => ({ ...prev, gameCode: code }))
+    }
+
     useEffect(() => {
         if (!username) return navigate('/');
     }, []);
+
+    // useEffect(() => {
+    //     loadGameCode(gameCode)
+    // }, [gameCode])
 
     useEffect(() => {
         socket.on("gameJoined", (gameCode) => {
@@ -107,6 +142,10 @@ export default function Browser() {
             setGameCode(gameCode);
             setBoard(new Board(gameCode));
         });
+
+        socket.on('sendGameData', (code, stake) => {
+            createGame(code, stake);
+        })
 
         socket.on("gameStarted", (player) => {
             console.log("Game started! I am player ", player);
@@ -180,6 +219,7 @@ export default function Browser() {
         });
 
         return () => {
+            socket.off('sendGameData')
             socket.off('opponent');
             socket.off('validGameCode');
             socket.off("gameJoined");
@@ -208,14 +248,11 @@ export default function Browser() {
                             <button
                                 className='btn-trans'
                                 onClick={() => {
-                                    const handleCreateAction = () => {
-                                        createGame();
-                                    };
 
                                     openModal({
                                         opponent: '',
-                                        gameCode: '',
-                                        action: handleCreateAction,
+                                        gameCode: 'null',
+                                        action: createGameEmit,
                                         buttonText: 'Create Game'
                                     });
                                 }}

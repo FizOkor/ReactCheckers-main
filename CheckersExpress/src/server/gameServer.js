@@ -87,6 +87,8 @@ export default function ioHandler(io) {
         );
         return;
       }
+      
+      socket.emit('sendGameData', gameCode,stakeAmt);
       // Create the game
       games[gameCode] = {
         players: [],
@@ -94,7 +96,10 @@ export default function ioHandler(io) {
         board: new Board(),
         sockets: [],
       };
-      joinGame(gameCode, socket, username, games, io);
+      // joinGame(gameCode, socket, username, games, io);
+    });
+    socket.on('joinGame', (gameCode) => {
+
     });
 
     socket.on('verifyGameCode', (gameCode) => {

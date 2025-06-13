@@ -8,9 +8,13 @@ export const getEscrowContract = async () => {
     return null;
   }
 
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+ try{
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
 
-  return contract;
+    return contract;
+ } catch (err) {
+    throw new Error (err)
+ }
 };
